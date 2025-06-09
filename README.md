@@ -21,12 +21,16 @@ Weights & Biases has augmented the Data Flywheel Blueprint to give you instant t
 - Production Traffic Monitoring
 - Model Evaluation Tracking
 - Fine-tuning Experiment Management
+- Model Artifact Versioning
+- Dataset Serialization and Versioning
 
 This provides you with the data to be successful in your implementation of this Flywheel blueprint all the way to production. The integration is activated when setting `WANDB_API_KEY` when deploying the blueprint.
 
 NOTE:
 - By default, tracing is logged to your default team in W&B, under project `data-flywheel`. You can override this by setting `WANDB_PROJECT` as well.
 - Ensure to set `WANDB_API_KEY` and `WANDB_PROJECT` in your environment configuration.
+- Model artifacts (including fine-tuned models, LoRA adapters, and evaluation results) are automatically logged to W&B for versioning and tracking.
+- Datasets created from Weave traces are serialized and versioned in W&B, enabling reproducible experiments and easy dataset sharing across teams.
 
 Data Flywheels are a fledgling concept in GenerativeAI, but already real-world tests within NVIDIA have identified instances where **using a flywheel can reduce inference costs by up to 98.6%**. There are caveats to this which we discuss below, but we believe these early data points warrant attention.
 
@@ -56,6 +60,7 @@ You can get started quickly and achieve similar results using your own infrastru
     - [Technical Diagrams](#technical-diagrams)
     - [Minimum System Requirements](#minimum-system-requirements)
     - [Task Serialization Safeguard 🌐](#task-serialization-safeguard-)
+    - [W\&B Integration Details](#wb-integration-details)
   - [Next Steps](#next-steps)
   - [Available Customizations](#available-customizations)
   - [Contributing](#contributing)
@@ -78,7 +83,13 @@ flowchart TD
   expN --> results
 ```
 
-Production traffic from your application is routed to Weights & Biases Weave for comprehensive logging and monitoring. From there, evaluation and fine-tuning datasets are created and used in a series of offline experiments, with results tracked in Weights & Biases Models. Anyone who has done this manually knows there are a lot of options to consider when designing the experiments, and many of them depend on the kinds of data you have:
+Production traffic from your application is routed to Weights & Biases Weave for comprehensive logging and monitoring. From there, evaluation and fine-tuning datasets are created and used in a series of offline experiments, with results tracked in Weights & Biases Models. The system automatically:
+- Logs model artifacts (including fine-tuned models and LoRA adapters) to W&B
+- Serializes and versions datasets created from Weave traces
+- Tracks experiment metadata and evaluation results
+- Links evaluation runs to model artifacts for complete lineage tracking
+
+Anyone who has done this manually knows there are a lot of options to consider when designing the experiments, and many of them depend on the kinds of data you have:
 
 - Which models do you pick?
 - In what ways do you curate your datasets?
@@ -155,7 +166,9 @@ Therefore, to effectively use this blueprint:
      • **base** – raw production prompts replayed.
      • **icl** – few-shot prompts built from random traffic examples.
      • **customized** – a LoRA fine-tune evaluated with the base prompts.
-   - Scores are an LLM-as-judge similarity metric in the range `[0, 1]`. Look for high-scoring small models, then download the datasets, LoRA adapters, or model artifacts for manual inspection and further analysis.
+   - Scores are an LLM-as-judge similarity metric in the range `[0, 1]`. Look for high-scoring small models, then:
+     • Review the linked evaluation runs in W&B to understand model performance
+     • Use W&B's visualization tools to compare different model versions and their metrics
 
 6. **Keep the human in the loop**
    - Think of the Flywheel as a flashlight, not an autopilot. Promotion to production—as well as any deeper evaluation or dataset curation—remains a human decision.
@@ -286,6 +299,10 @@ log_chat(WORKLOADS["tool_router"], messages_tool)
 ```
 
 💡 **Streaming responses**: the OpenAI SDK delivers tokens incrementally in streaming mode. If you are using streaming mode in your clients, you will need to take that into account and either buffer the stream and reconstruct a full `response` object before logging, or modify the Flywheel importer to reconstruct the full response.
+
+<p align="center">
+<img src="./docs/images/weave-dataset.png" width="750">
+</p>
 
 #### 3&ensp;–&ensp;Import helpers and customization
 
@@ -440,6 +457,51 @@ This ensures that only **one** Flywheel experiment can allocate GPUs at any give
 
 **Roadmap** – Automatic GPU introspection and smarter scheduling are planned for a future version of the Blueprint so multiple Flywheel runs can execute in parallel when resources permit.
 
+### W&B Integration Details
+
+The blueprint provides comprehensive integration with Weights & Biases:
+
+- **Model Artifact Management**
+  - Automatic logging of fine-tuned models and LoRA adapters
+  - Version tracking for all model artifacts
+  - Metadata storage including model specs, configurations, and performance metrics
+  - Linking of evaluation runs to model artifacts for complete lineage
+
+<p align="center">
+<img src="./docs/images/wandb-model-artifacts.png" width="750">
+</p>
+
+- **Dataset Management**
+  - Serialization of datasets from Weave traces
+  - Version control for training, validation, and evaluation datasets
+  - Automatic dataset splitting and formatting
+  - Support for both raw and processed dataset versions
+
+<p align="center">
+<img src="./docs/images/dataset-dash.png" width="750">
+</p>
+
+- **Experiment Tracking**
+  - Detailed logging of evaluation metrics and scores
+  - Customizable tags and metadata for experiment organization
+  - Real-time progress monitoring and visualization
+  - Integration with W&B's experiment comparison tools
+
+<p align="center">
+<img src="./docs/images/wandb-dash.png" width="750">
+</p>
+
+- **Production Monitoring**
+  - Comprehensive logging of production traffic
+  - Performance metrics tracking
+  - Automatic dataset creation from production logs
+  - Support for custom metrics and visualizations
+
+<p align="center">
+<img src="./docs/images/weave-trace.png" width="750">
+</p>
+
+
 ## Next Steps
 
 - Review the [Architecture Overview](./docs/01-architecture.md)
@@ -462,6 +524,7 @@ The following are some of the customizations that you can make after you complet
 | [Data Infrastructure](docs/03-configuration.md#data-infrastructure) | Configure data storage and processing | • **Storage**: Weights & Biases Weave for logs<br>• **Queue**: Redis for task processing<br>• **Database**: MongoDB for API data<br>• **Processing**: Celery workers with configurable concurrency |
 | [Experiment Tracking](docs/03-configuration.md#experiment-tracking) | Configure experiment tracking | • **Weights & Biases**: Project name, entity, API key<br>• **Model Registry**: Tracking model artifacts<br>• **Metrics**: Customizable metrics logging for evaluation results |
 | [Deployment Options](docs/03-configuration.md#deployment-options) | Infrastructure configuration | • **Development**: Docker Compose with hot reloading<br>• **Services**: API, Celery Worker, Redis, MongoDB<br>• **Resource Config**: Network mode, volume mounts, health checks<br>• **Environment**: Configurable URLs and API keys |
+| [W&B Configuration](docs/03-configuration.md#wandb-configuration) | Configure W&B integration | • **Project Settings**: Project name, entity, API key<br>• **Artifact Management**: Model and dataset versioning<br>• **Experiment Tracking**: Custom metrics and visualizations<br>• **Production Monitoring**: Traffic logging and analysis |
 
 Refer to the [Configuration Guide](./docs/03-configuration.md) for more information.
 
