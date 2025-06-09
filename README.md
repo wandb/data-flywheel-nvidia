@@ -1,6 +1,32 @@
-# Data Flywheel Foundational Blueprint
+# Data Flywheel Foundational Blueprint with Weights & Biases Weave
 
-Deploy this blueprint to create a **production-grade autotonomous Data Flywheel service** that uses the NeMo Microservices platform to continuously discover and promote more efficient models.
+<p align="center">
+<img src="./docs/images/data-flywheel-blueprint.png" width="750">
+</p>
+
+<p align="center">
+<img src="./docs/images/weave-trace.png" width="750">
+</p>
+
+<p align="center">
+<img src="./docs/images/wandb-dash.png" width="750">
+</p>
+
+Deploy this blueprint to create a **production-grade autonomous Data Flywheel service** that uses the NeMo Microservices platform to continuously discover and promote more efficient models.
+
+## W&B Weave Integration for the Data Flywheel
+
+Weights & Biases has augmented the Data Flywheel Blueprint to give you instant tracing and visibility into your production AI systems, as well as a platform to iterate on them to bring them to production. The following services have been enabled with W&B Weave:
+
+- Production Traffic Monitoring
+- Model Evaluation Tracking
+- Fine-tuning Experiment Management
+
+This provides you with the data to be successful in your implementation of this Flywheel blueprint all the way to production. The integration is activated when setting `WANDB_API_KEY` when deploying the blueprint.
+
+NOTE:
+- By default, tracing is logged to your default team in W&B, under project `data-flywheel`. You can override this by setting `WANDB_PROJECT` as well.
+- Ensure to set `WANDB_API_KEY` and `WANDB_PROJECT` in your environment configuration.
 
 Data Flywheels are a fledgling concept in GenerativeAI, but already real-world tests within NVIDIA have identified instances where **using a flywheel can reduce inference costs by up to 98.6%**. There are caveats to this which we discuss below, but we believe these early data points warrant attention.
 
@@ -11,7 +37,8 @@ Data Flywheels are a fledgling concept in GenerativeAI, but already real-world t
 
 You can get started quickly and achieve similar results using your own infrastructure by following the [Quickstart guide](./docs/02-quickstart.md).
 
-- [Data Flywheel Foundational Blueprint](#data-flywheel-foundational-blueprint)
+- [Data Flywheel Foundational Blueprint with Weights \& Biases Weave](#data-flywheel-foundational-blueprint-with-weights--biases-weave)
+  - [W\&B Weave Integration for the Data Flywheel](#wb-weave-integration-for-the-data-flywheel)
   - [What is a Data Flywheel?](#what-is-a-data-flywheel)
     - [Where the NeMo Microservice Platform Comes In](#where-the-nemo-microservice-platform-comes-in)
   - [How to Use This Blueprint](#how-to-use-this-blueprint)
@@ -41,17 +68,17 @@ A data flywheel is a process that uses data exhaust from production applications
 
 ```mermaid
 flowchart TD
-  app[Your App] --prompts/responses/feedback--> logs[Log service]
+  app[Your App] --prompts/responses/feedback--> logs[Weights & Biases Weave]
   logs --Create Datasets--> orch["Orchestrator"]
   orch --> exp1["Exp #1"]
   orch --> exp2["Exp #2"]
   orch --> expN["Exp #N"]
-  exp1 --> results
+  exp1 --> results[Weights & Biases Models]
   exp2 --> results
   expN --> results
 ```
 
-Production traffic from your application is routed to a centralized logging service. From there, evaluation and fine-tuning datasets are created and used in a series of offline experiments. Anyone who has done this manually knows there are a lot of options to consider when designing the experiments, and many of them depend on the kinds of data you have:
+Production traffic from your application is routed to Weights & Biases Weave for comprehensive logging and monitoring. From there, evaluation and fine-tuning datasets are created and used in a series of offline experiments, with results tracked in Weights & Biases Models. Anyone who has done this manually knows there are a lot of options to consider when designing the experiments, and many of them depend on the kinds of data you have:
 
 - Which models do you pick?
 - In what ways do you curate your datasets?
@@ -78,7 +105,7 @@ subgraph NIMs["Loop across ALL NIMs"]
   NIM --> evaluator
 end
 
-evaluator --> results["Flywheel Results"]
+evaluator --> results["Weights & Biases Models"]
 ```
 
 In just a few hours, this automated process built on top of NMP can:
@@ -88,7 +115,7 @@ In just a few hours, this automated process built on top of NMP can:
 1. De-dup it.
 1. Create eval and fine-tuning datasets from your production traffic and store them in NeMo Datastore.
 1. Kick off fine-tuning jobs with NeMo Customizer.
-1. Run evaluations with LLM-as-judge comparisons on NeMo Evaluator and save the results to Weights & Biands for visualization and analysis.
+1. Run evaluations with LLM-as-judge comparisons on NeMo Evaluator and save the results to Weights & Biases for visualization and analysis.
 
 With reasonable defaults, the system automatically narrows a vast number of possible options down to a manageable set of promising candidates for further analysis—-no manual experiment design required.
 
@@ -295,7 +322,7 @@ You can also learn more about Flywheels here:
 ### Key Features
 
 - Data Collection and Storage:
-  - Weights & Biases Weave for logging prompt/completion data
+  - Weights & Biases Weave for logging prompt/completion data and production monitoring
   - MongoDB for API and metadata storage
   - Redis for task queue management
 - Model Integration:
@@ -311,7 +338,7 @@ You can also learn more about Flywheels here:
   - Health monitoring for core services
 - Experiment Tracking:
   - Weights & Biases integration for experiment tracking and evaluation results visualization
-  - Model registry and dataset versioning
+  - Model registry and dataset versioning in Weights & Biases Models
   - Rich visualization of results and metrics from evaluations
 
 ### Design Philosophy
@@ -334,7 +361,7 @@ The Data Flywheel Foundational Blueprint empowers organizations to accelerate th
    - Designed for teams with existing generative AI applications in production.
    - Easily integrates with your current logging and workload tagging practices.
    - Supports enhanced workload descriptions for improved future classification.
-   - Leverages robust infrastructure—including Weights & Biases Weave, MongoDB, Redis, and NMP—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
+   - Leverages robust infrastructure—including Weights & Biases Weave for production monitoring, Weights & Biases Models for experiment tracking, MongoDB, Redis, and NMP—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
 
 To get the most value from the Data Flywheel Foundational Blueprint, ensure you have:
 
@@ -369,7 +396,8 @@ The blueprint consists of the following implemented components:
   - Data models and schemas (`src/api/models.py`, `src/api/schemas.py`)
   - Job service for task management (`src/api/job_service.py`)
 - **Data Storage**:
-  - Weights & Biases Weave for log storage and experiment tracking
+  - Weights & Biases Weave for log storage and production monitoring
+  - Weights & Biases Models for experiment tracking
   - MongoDB for API data persistence (`src/api/db.py`)
   - Redis for task queue
 - **Task Processing**:
