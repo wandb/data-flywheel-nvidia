@@ -204,9 +204,7 @@ from openai import OpenAI
 from weave.trace.context.weave_client_context import get_weave_client
 
 # Initialize Weights & Biases Weave client
-client = get_weave_client()
-if not client:
-    client = weave.init(project_name="your-project-name")
+weave.init(project_name="your-project-name")
 
 openai_client = OpenAI()
 
@@ -218,6 +216,8 @@ WORKLOADS = {
     "tool_router": "agent.tool_router",
 }
 
+# This is tracks all the chat interactions
+@weave.op()
 def log_chat(workload_id: str, messages: list[dict], model: str = "gpt-3.5-turbo", temperature: float = 0.3, max_tokens: int = 1024):
     # 1) call the LLM
     response = openai_client.chat.completions.create(
@@ -241,7 +241,7 @@ def log_chat(workload_id: str, messages: list[dict], model: str = "gpt-3.5-turbo
         "response": response.model_dump(),  # OpenAI python-sdk v1 returns a pydantic model
     }
 
-    # 3) Log to Weights & Biases Weave
+    # 3) The weave.op decorator automatically logs the document to Weave
     return doc
 
 # --- Example usage -----------------------------------------------------------
