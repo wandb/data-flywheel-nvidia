@@ -24,16 +24,11 @@ You can get started quickly and achieve similar results using your own infrastru
   - [Technical Details](#technical-details)
     - [Key Features](#key-features)
     - [Design Philosophy](#design-philosophy)
+      - [Future Roadmap](#future-roadmap)
     - [Software Components](#software-components)
     - [Technical Diagrams](#technical-diagrams)
     - [Minimum System Requirements](#minimum-system-requirements)
-      - [Hardware Requirements](#hardware-requirements)
-      - [Software Requirements](#software-requirements)
-      - [Service Requirements](#service-requirements)
-      - [Resource Requirements](#resource-requirements)
-      - [Development Environment](#development-environment)
-      - [Production Environment](#production-environment)
-    - [Task Serialization Safeguard 🌐](#task-serialization-safeguard)
+    - [Task Serialization Safeguard 🌐](#task-serialization-safeguard-)
   - [Next Steps](#next-steps)
   - [Available Customizations](#available-customizations)
   - [Contributing](#contributing)
@@ -72,7 +67,7 @@ The NeMo Microservice platform allows for programmatic control of **datasets**, 
 ```mermaid
 flowchart TD
 
-app["Your application"] --Prompt/completion logs--> log_store["Log Store"]
+app["Your application"] --Prompt/completion logs--> log_store["Weights & Biases Weave"]
 log_store --Datasets--> datasets["NeMo Datastore"]
 datasets --"Fine-tuning datasets"--> customizer["NeMo Customizer"]
 datasets --"Eval datasets"--> evaluator["NeMo Evaluator"]
@@ -88,12 +83,12 @@ evaluator --> results["Flywheel Results"]
 
 In just a few hours, this automated process built on top of NMP can:
 
-1. Pull data from your log store.
+1. Pull data from your Weights & Biases Weave logs.
 1. Group it by task (for example, if you have an agent doing multiple things, each node is a different task).
 1. De-dup it.
 1. Create eval and fine-tuning datasets from your production traffic and store them in NeMo Datastore.
 1. Kick off fine-tuning jobs with NeMo Customizer.
-1. Run evaluations with LLM-as-judge comparisons on NeMo Evaluator.
+1. Run evaluations with LLM-as-judge comparisons on NeMo Evaluator and save the results to Weights & Biands for visualization and analysis.
 
 With reasonable defaults, the system automatically narrows a vast number of possible options down to a manageable set of promising candidates for further analysis—-no manual experiment design required.
 
@@ -119,14 +114,14 @@ Therefore, to effectively use this blueprint:
 
 2. **Prepare your traffic**
    - **Instrument production applications**: Every distinct LLM call (agent node, route, tool, etc.) must emit a stable `workload_id`. Optionally include a free-form description string—ignored by inference but useful for future workload classification.
-   - **Export or connect your logs**: If you're already logging prompt/response pairs, write a small connector (or use an existing one) to push them into Elasticsearch or directly into the Flywheel API.
+   - **Export or connect your logs**: If you're already logging prompt/response pairs, write a small connector (or use an existing one) to push them into Weights & Biases Weave or directly into the Flywheel API.
 
 3. **Choose how to run the Flywheel**
    - **Always-on service**: Keep the stack running in a shared k8s/VM environment so new traffic is evaluated continuously.
    - **Ad-hoc run**: Spin it up locally on a workstation with a few GPUs, load a slice of traffic, kick off a job, and shut everything down when the results are in.
 
 4. **Kick off a run**
-   - Load or stream the tagged traffic into Elasticsearch to launch a job. The system will spin up the necessary NIMs, schedule evaluations and fine-tunes, and track everything automatically.
+   - Load or stream the tagged traffic into Weights & Biases Weave to launch a job. The system will spin up the necessary NIMs, schedule evaluations and fine-tunes, and track everything automatically.
 
 5. **Interpret the results**
    - The response is grouped by NIM. For each NIM the Flywheel currently runs three experiment types:
@@ -143,11 +138,11 @@ Therefore, to effectively use this blueprint:
 
 ### Preparing your data
 
-The Flywheel treats your production **prompt / completion logs** as the single source of truth.  At run-time it only needs to know *where* to find the logs (e.g. an Elasticsearch index) and *how* the individual documents are shaped. Since this is a reference implementation, you can modify the code to suit your needs, but the current schemas are defined below should you decide to conform to them.
+The Flywheel treats your production **prompt / completion logs** as the single source of truth. At run-time it only needs to know *where* to find the logs (e.g. Weights & Biases Weave) and *how* the individual documents are shaped. Since this is a reference implementation, you can modify the code to suit your needs, but the current schemas are defined below should you decide to conform to them.
 
 #### 1&ensp;–&ensp;Log schema
 
-Each Elasticsearch document **must** contain the following top-level keys:
+Each log entry document **must** contain the following top-level keys:
 
 | Field        | Type               | Description                                                         |
 |--------------|--------------------|---------------------------------------------------------------------|
@@ -199,18 +194,20 @@ A minimal example document therefore looks like:
 
 #### 2&ensp;–&ensp;Instrumenting an application
 
-If you already write request/response logs, you can either route that traffic to a production Elasticsearch instance that you manage or bulk import them into the Elasticsearch instance started by `docker-compose`.  For new projects the snippet below shows how a **synchronous** OpenAI call can be wrapped so every interaction is written in the expected format.
+If you already write request/response logs, you can either route that traffic to Weights & Biases Weave using the Weave client or bulk import them using the provided helper scripts. For new projects the snippet below shows how a **synchronous** OpenAI call can be wrapped so every interaction is logged in the expected format:
 
 ```python
-# examples/log_to_es.py
-import os, time, uuid
-from elasticsearch import Elasticsearch
+# examples/log_to_weave.py
+import os, time
+import weave
 from openai import OpenAI
+from weave.trace.context.weave_client_context import get_weave_client
 
-ES_URL = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-ES_INDEX = os.getenv("ES_COLLECTION_NAME", "flywheel")
+# Initialize Weights & Biases Weave client
+client = get_weave_client()
+if not client:
+    client = weave.init(project_name="your-project-name")
 
-es = Elasticsearch(hosts=[ES_URL])
 openai_client = OpenAI()
 
 CLIENT_ID = "my_demo_app"
@@ -221,12 +218,13 @@ WORKLOADS = {
     "tool_router": "agent.tool_router",
 }
 
-def log_chat(workload_id: str, messages: list[dict]):
+def log_chat(workload_id: str, messages: list[dict], model: str = "gpt-3.5-turbo", temperature: float = 0.3, max_tokens: int = 1024):
     # 1) call the LLM
     response = openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model=model,
         messages=messages,
-        temperature=0.3,
+        temperature=temperature,
+        max_tokens=max_tokens,
     )
 
     # 2) build the document
@@ -237,14 +235,14 @@ def log_chat(workload_id: str, messages: list[dict]):
         "request": {
             "model": response.model,
             "messages": messages,
-            "temperature": 0.3,
-            "max_tokens": 1024,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
         },
         "response": response.model_dump(),  # OpenAI python-sdk v1 returns a pydantic model
     }
 
-    # 3) write to Elasticsearch
-    es.index(index=ES_INDEX, document=doc, id=str(uuid.uuid4()))
+    # 3) Log to Weights & Biases Weave
+    return doc
 
 # --- Example usage -----------------------------------------------------------
 messages_chat = [{"role": "user", "content": "Hello!"}]
@@ -260,16 +258,16 @@ messages_tool = [
 log_chat(WORKLOADS["tool_router"], messages_tool)
 ```
 
-💡 **Streaming responses**: the OpenAI SDK delivers tokens incrementally in streaming mode. If you are using streaming mode in your clients, you will need to take that into account and either buffer the stream and reconstruct a full `response` object before indexing, or modify the Flywheel importer to reconstruct the full response.
+💡 **Streaming responses**: the OpenAI SDK delivers tokens incrementally in streaming mode. If you are using streaming mode in your clients, you will need to take that into account and either buffer the stream and reconstruct a full `response` object before logging, or modify the Flywheel importer to reconstruct the full response.
 
 #### 3&ensp;–&ensp;Import helpers and customization
 
 The reference implementation already bundles helpers you can reuse:
 
-* `src/scripts/load_test_data.py` – CLI to bulk-load a JSONL file into the Flywheel index.
+* `src/scripts/load_test_data_weave.py` – CLI to bulk-load a JSONL file into the Weights & Biases Weave.
 * `src/tasks/tasks.py::create_datasets` – Celery task that *reads* logs, deduplicates them, and turns them into evaluation & training datasets.
 
-Feel free to swap Elasticsearch for another store or adjust the mapping – just make sure `create_datasets` can still retrieve documents in the schema above.
+Feel free to adjust the logging integration to suit your needs – just make sure `create_datasets` can still retrieve documents in the schema above.
 
 ### Real-World Results and What to Expect
 
@@ -297,7 +295,7 @@ You can also learn more about Flywheels here:
 ### Key Features
 
 - Data Collection and Storage:
-  - Elasticsearch for logging prompt/completion data
+  - Weights & Biases Weave for logging prompt/completion data
   - MongoDB for API and metadata storage
   - Redis for task queue management
 - Model Integration:
@@ -311,6 +309,10 @@ You can also learn more about Flywheels here:
   - Docker Compose setup for development
   - Celery workers for background processing
   - Health monitoring for core services
+- Experiment Tracking:
+  - Weights & Biases integration for experiment tracking and evaluation results visualization
+  - Model registry and dataset versioning
+  - Rich visualization of results and metrics from evaluations
 
 ### Design Philosophy
 
@@ -332,24 +334,24 @@ The Data Flywheel Foundational Blueprint empowers organizations to accelerate th
    - Designed for teams with existing generative AI applications in production.
    - Easily integrates with your current logging and workload tagging practices.
    - Supports enhanced workload descriptions for improved future classification.
-   - Leverages robust infrastructure—including Elasticsearch, MongoDB, Redis, and NMP—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
+   - Leverages robust infrastructure—including Weights & Biases Weave, MongoDB, Redis, and NMP—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
 
 To get the most value from the Data Flywheel Foundational Blueprint, ensure you have:
 
 - An existing generative AI application in production.
 - Logging of prompt/completion traffic, with workload tagging (such as routes, nodes, or agent steps).
 - (Optional, but recommended) Descriptive metadata for each workload to support future classification.
-- The ability to deploy and operate supporting infrastructure (Elasticsearch, MongoDB, Redis, and NMP) for data storage, dataset creation, evaluation, and fine-tuning.
+- The ability to deploy and operate supporting infrastructure (Weights & Biases Weave, MongoDB, Redis, and NMP) for data storage, dataset creation, evaluation, and fine-tuning.
 
 By following this blueprint, you can confidently advance your AI model optimization initiatives, leveraging a process that is transparent, adaptable, and focused on measurable outcomes.
 
 #### Future Roadmap
-The blueprint purposely keeps the first release simple.  Areas we are actively exploring for future versions include:
+The blueprint purposely keeps the first release simple. Areas we are actively exploring for future versions include:
 
 | Theme | Example Ideas |
 |-------|--------------|
 | **Automated Data Collection** | Integrated collection of model inputs/outputs, latency, and metadata |
-| **Visualization Dashboards** | Pre-built Grafana/Kibana dashboards for cost, latency, drift and accuracy trends |
+| **Visualization Dashboards** | Enhanced W&B dashboards for cost, latency, drift and accuracy trends |
 | **Agentic Observability & Prompt Insights** | Detect regression, drift, or improvement trends based on performance telemetry |
 | **Dynamic Configuration Overrides** | Runtime overrides for config.yaml settings via API or environment variables |
 | **Data Governance & Privacy** | PII redaction pipeline support for logs and datasets; fine-grained RBAC on dataset access and usage |
@@ -367,7 +369,7 @@ The blueprint consists of the following implemented components:
   - Data models and schemas (`src/api/models.py`, `src/api/schemas.py`)
   - Job service for task management (`src/api/job_service.py`)
 - **Data Storage**:
-  - Elasticsearch for log storage
+  - Weights & Biases Weave for log storage and experiment tracking
   - MongoDB for API data persistence (`src/api/db.py`)
   - Redis for task queue
 - **Task Processing**:
@@ -377,6 +379,9 @@ The blueprint consists of the following implemented components:
   - Datastore client for dataset management
   - Model evaluation and customization interfaces
   - Configurable NMP endpoints
+- **Experiment Tracking**:
+  - Weights & Biases integration for tracking experiments and visualizing evaluation results (`src/lib/integration/wandb_callback.py`)
+  - Model registry for versioning and tracking (`src/lib/nemo/model_manager.py`)
 
 ### Technical Diagrams
 
@@ -390,8 +395,8 @@ For details on the architecture of a Flywheel and the components of this Bluepri
 | Cluster | Single-node NVIDIA GPU cluster on Linux with cluster-admin permissions |
 | Disk Space | At least 200 GB free |
 | Software | Python 3.11<br>Docker Engine<br>Docker Compose v2 |
-| Services | Elasticsearch 8.12.2<br>MongoDB 7.0<br>Redis 7.2<br>FastAPI (API server)<br>Celery (task processing) |
-| Resource | **Minimum Memory**: 1GB (512MB reserved for Elasticsearch)<br>**Storage**: Varies by log volume/model size<br>**Network**: Ports 8000 (API), 9200 (Elasticsearch), 27017 (MongoDB), 6379 (Redis) |
+| Services | Weights & Biases Weave<br>MongoDB 7.0<br>Redis 7.2<br>FastAPI (API server)<br>Celery (task processing) |
+| Resource | **Minimum Memory**: 1GB<br>**Storage**: Varies by log volume/model size<br>**Network**: Ports 8000 (API), 27017 (MongoDB), 6379 (Redis) |
 | Development | Docker Compose for local dev with hot reloading<br>Supports macOS (Darwin) and Linux<br>Optional: GPU support for model inference |
 | Production | Kubernetes cluster (recommended)<br>Resources scale with workload<br>Persistent volume support for data storage |
 
@@ -422,12 +427,13 @@ The following are some of the customizations that you can make after you complet
 
 | Category | Description | Available Options |
 |----------|-------------|------------------|
-| [Environment Variables](docs/03-configuration.md#environment-variables) | Configure system using environment variables | • **Required Variables**: NGC_API_KEY, HF_TOKEN<br>• **Optional Variables**: ES_COLLECTION_NAME, ELASTICSEARCH_URL, MONGODB_URL, REDIS_URL<br>• **Configuration**: Via .env file or system environment |
+| [Environment Variables](docs/03-configuration.md#environment-variables) | Configure system using environment variables | • **Required Variables**: NGC_API_KEY, HF_TOKEN, WANDB_API_KEY<br>• **Optional Variables**: WANDB_PROJECT, WANDB_ENTITY, MONGODB_URL, REDIS_URL<br>• **Configuration**: Via .env file or system environment |
 | [Model Integration](docs/03-configuration.md#model-integration) | Configure and deploy LLM models | • **Currently Supported**: Meta Llama 3.2 1B Instruct<br>• **Context Length**: Up to 32768 tokens<br>• **Hardware Config**: GPU support (configurable), PVC size (configurable)<br>• **Version Control**: Model tags supported |
 | [Evaluation Settings](docs/03-configuration.md#evaluation-settings) | Configure data splitting and evaluation parameters | • **Data Split**: Eval size (default: 20), validation ratio (0.1)<br>• **Minimum Records**: 50 records required<br>• **Reproducibility**: Optional random seed<br>• **ICL Settings**: Context length (max 32768), reserved tokens (4096), examples (min 1, max 3) |
 | [Fine-tuning Options](docs/03-configuration.md#fine-tuning-options) | Customize model training | • **Training Type**: SFT (Supervised Fine-Tuning)<br>• **Method**: LoRA with configurable parameters<br>• **Parameters**: epochs (2), batch size (16), learning rate (0.0001)<br>• **LoRA Config**: adapter dimension (32), dropout (0.1) |
-| [Data Infrastructure](docs/03-configuration.md#data-infrastructure) | Configure data storage and processing | • **Storage**: Elasticsearch for logs<br>• **Queue**: Redis for task processing<br>• **Database**: MongoDB for API data<br>• **Processing**: Celery workers with configurable concurrency |
-| [Deployment Options](docs/03-configuration.md#deployment-options) | Infrastructure configuration | • **Development**: Docker Compose with hot reloading<br>• **Services**: API, Celery Worker, Redis, MongoDB, Elasticsearch<br>• **Resource Config**: Network mode, volume mounts, health checks<br>• **Environment**: Configurable URLs and API keys |
+| [Data Infrastructure](docs/03-configuration.md#data-infrastructure) | Configure data storage and processing | • **Storage**: Weights & Biases Weave for logs<br>• **Queue**: Redis for task processing<br>• **Database**: MongoDB for API data<br>• **Processing**: Celery workers with configurable concurrency |
+| [Experiment Tracking](docs/03-configuration.md#experiment-tracking) | Configure experiment tracking | • **Weights & Biases**: Project name, entity, API key<br>• **Model Registry**: Tracking model artifacts<br>• **Metrics**: Customizable metrics logging for evaluation results |
+| [Deployment Options](docs/03-configuration.md#deployment-options) | Infrastructure configuration | • **Development**: Docker Compose with hot reloading<br>• **Services**: API, Celery Worker, Redis, MongoDB<br>• **Resource Config**: Network mode, volume mounts, health checks<br>• **Environment**: Configurable URLs and API keys |
 
 Refer to the [Configuration Guide](./docs/03-configuration.md) for more information.
 

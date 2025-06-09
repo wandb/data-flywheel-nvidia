@@ -86,7 +86,7 @@ def create_datasets(
     flywheel_run_id: str,
     client_id: str,
     output_dataset_prefix: str = "",
-    from_weave: bool = True,
+    from_weave: bool = False,
     weave_op_names: Optional[List[str]] = None,
 ) -> TaskResult:
     """Pull data from Elasticsearch and create train/val/eval datasets.
@@ -117,7 +117,6 @@ def create_datasets(
         if from_weave:
             exporter.save_to_weave_dataset(records, client_id, workload_id)
 
-        #TODO: Find the most useful place to save the dataset within W&B as these just provide details of the dataset uploaded to NeMo DataStore
         datasets = DatasetCreator(
             records, flywheel_run_id, output_dataset_prefix, workload_id
         ).create_datasets()
@@ -260,17 +259,19 @@ def spin_up_nim(previous_result: TaskResult, nim_config: dict) -> TaskResult:
 
 
 @celery_app.task(name="tasks.run_base_eval", pydantic=True)
-def run_base_eval(previous_result: TaskResult) -> TaskResult:
-    return run_generic_eval(previous_result, EvalType.BASE, DatasetType.BASE)
+def run_base_eval(previous_result: TaskResult, client_id: str) -> TaskResult:
+    return run_generic_eval(previous_result, EvalType.BASE, DatasetType.BASE, client_id)
 
 
 @celery_app.task(name="tasks.run_icl_eval", pydantic=True)
-def run_icl_eval(previous_result: TaskResult) -> TaskResult:
-    return run_generic_eval(previous_result, EvalType.ICL, DatasetType.ICL)
+def run_icl_eval(previous_result: TaskResult, client_id: str) -> TaskResult:
+    return run_generic_eval(previous_result, EvalType.ICL, DatasetType.ICL, client_id)
 
-#TODO: Incorporate Weave somehow
 def run_generic_eval(
-    previous_result: TaskResult, eval_type: EvalType, dataset_type: DatasetType
+    previous_result: TaskResult, 
+    eval_type: EvalType, 
+    dataset_type: DatasetType,
+    client_id: str
 ) -> TaskResult:
     """
     Run the Base/ICL/Customization evaluation against the NIM based on the eval_type.
@@ -327,12 +328,14 @@ def run_generic_eval(
                 "workload_id": previous_result.workload_id,
                 "flywheel_run_id": previous_result.flywheel_run_id,
                 "base_model": previous_result.nim.model_name,
+                "client_id": client_id,
             }
             
             shared_tags = [
                 f"model_{previous_result.nim.model_name}",
                 f"workload_{previous_result.workload_id}",
                 f"flywheel_{previous_result.flywheel_run_id}",
+                f"client_{client_id}",
             ]
             
             if previous_result.customization:
@@ -403,9 +406,10 @@ def run_generic_eval(
             )
             logger.info("Evaluation job id: %s", job_id)
 
-            # update uri in evaluation
+            # update uri and job_id in evaluation
             evaluation.nmp_uri = evaluator.get_job_uri(job_id)
-            progress_callback({"nmp_uri": evaluation.nmp_uri})
+            evaluation.job_id = job_id
+            progress_callback({"nmp_uri": evaluation.nmp_uri, "job_id": job_id})
 
             jobs.append(
                 {
@@ -535,13 +539,14 @@ def run_generic_eval(
 
 
 @celery_app.task(name="tasks.start_customization", pydantic=True)
-def start_customization(previous_result: TaskResult) -> TaskResult:
+def start_customization(previous_result: TaskResult, client_id: str) -> TaskResult:
     """
     Start customization process for the NIM.
     Takes the previous evaluation results.
 
     Args:
         previous_result: Result from the previous task containing workload_id and target_llm_model
+        client_id: ID of the client
     """
     if _should_skip_stage(previous_result, "start_customization"):
         return previous_result
@@ -631,12 +636,14 @@ def start_customization(previous_result: TaskResult) -> TaskResult:
                 "base_model": target_llm_model,
                 "customization_type": "fine-tuning",
                 "customization_job_id": customization_job_id,
+                "client_id": client_id,
             }
             
             shared_tags = [
                 f"model_{target_llm_model}",
                 f"workload_{workload_id}",
                 f"flywheel_{previous_result.flywheel_run_id}",
+                f"client_{client_id}",
                 customization_job_id,
                 "customization",
             ]
@@ -745,7 +752,7 @@ def start_customization(previous_result: TaskResult) -> TaskResult:
 
 
 @celery_app.task(name="tasks.run_customization_eval", pydantic=True)
-def run_customization_eval(previous_result: TaskResult) -> TaskResult:
+def run_customization_eval(previous_result: TaskResult, client_id: str) -> TaskResult:
     """Run evaluation on the customized model."""
     if _should_skip_stage(previous_result, "run_customization_eval"):
         return previous_result
@@ -783,7 +790,7 @@ def run_customization_eval(previous_result: TaskResult) -> TaskResult:
             f"Running evaluation on customized model {customization_model} for workload {workload_id}"
         )
 
-        next_result = run_generic_eval(previous_result, EvalType.CUSTOMIZED, DatasetType.BASE)
+        next_result = run_generic_eval(previous_result, EvalType.CUSTOMIZED, DatasetType.BASE, client_id)
         logger.info(f"Completed generic eval with result: {next_result.model_dump_json(indent=2)}")
 
         # --- Link eval runs to model artifact ---
@@ -959,11 +966,11 @@ def run_nim_workflow_dag(workload_id: str, flywheel_run_id: str, client_id: str)
         nim_chain = chain(
             spin_up_nim.s(nim_config=nim.model_dump()),  # Convert NIMConfig to dict
             group(
-                # run_base_eval.s(),
-                # run_icl_eval.s(),
+                run_base_eval.s(client_id=client_id),
+                run_icl_eval.s(client_id=client_id),
                 chain(
-                    start_customization.s(),
-                    run_customization_eval.s(),
+                    start_customization.s(client_id=client_id),
+                    run_customization_eval.s(client_id=client_id),
                 ),
             ),
             shutdown_deployment.s(),

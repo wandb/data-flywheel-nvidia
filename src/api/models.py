@@ -166,6 +166,7 @@ class NIMEvaluation(BaseModel):
     progress: float  # Progress percentage (0-100)
     nmp_uri: str | None = None
     error: str | None = None
+    job_id: str | None = None  # Added job_id field
 
     model_config = {
         "arbitrary_types_allowed": True,
@@ -187,6 +188,7 @@ class NIMEvaluation(BaseModel):
             "runtime_seconds": self.runtime_seconds,
             "progress": self.progress,
             "nmp_uri": self.nmp_uri,
+            "job_id": self.job_id,  # Include job_id in MongoDB document
         }
 
     @classmethod
@@ -202,6 +204,7 @@ class NIMEvaluation(BaseModel):
             runtime_seconds=doc["runtime_seconds"],
             progress=doc["progress"],
             nmp_uri=doc.get("nmp_uri"),
+            job_id=doc.get("job_id"),  # Get job_id from MongoDB document
         )
 
 

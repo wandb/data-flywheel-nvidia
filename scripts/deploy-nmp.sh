@@ -39,11 +39,10 @@ maybe_sudo() {
 }
 
 # === Dependency Installation ===
-# Install a dependency if it's missing - optimized for Linux
 install_dependency() {
   local tool=$1
 
-  log "Installing $tool using verified methods..."
+  log "Installing $tool"
 
   case "$tool" in
     minikube)
@@ -442,6 +441,8 @@ customizer:
     models:
       meta/llama-3.2-1b-instruct:
         enabled: true
+      meta/llama-3.2-3b-instruct:
+        enabled: true
       meta/llama-3.1-8b-instruct:
         enabled: true
         model_path: llama-3_1-8b-instruct
@@ -457,7 +458,7 @@ customizer:
       project: data-flywheel-baked
     env:
       WANDB_API_KEY: $WANDB_API_KEY
-
+      
 evaluator:
   enabled: true
   milvus:
