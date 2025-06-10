@@ -98,6 +98,8 @@ def test_create_datasets_from_es(
         val_ratio=0.5,  # 50% validation split
     )
 
+    settings.weave_config.weave_dataset_enabled = False
+
     # Select the appropriate workload ID and load the corresponding test data
     current_workload_id = test_workload_id
 
@@ -108,7 +110,6 @@ def test_create_datasets_from_es(
         workload_id=current_workload_id,
         flywheel_run_id=flywheel_run_id,
         client_id=client_id,
-        from_weave=False,
     )
 
     # Convert result to TaskResult model
@@ -167,11 +168,12 @@ def test_create_datasets_workload_classification_es(
     current_workload_id = test_workload_id
     flywheel_run_id, _ = create_flywheel_run
 
+    settings.weave_config.weave_dataset_enabled = False
+
     result = create_datasets(
         workload_id=current_workload_id,
         flywheel_run_id=flywheel_run_id,
         client_id=client_id,
-        from_weave=False,
     )
     task_result = TaskResult.model_validate(result)
 
@@ -202,13 +204,14 @@ def test_create_datasets_different_split_configs_es(
         DataSplitConfig(eval_size=3, val_ratio=0.4),
     ]
 
+    settings.weave_config.weave_dataset_enabled = False
+
     for config in test_configs:
         settings.data_split_config = config
         result = create_datasets(
             workload_id=current_workload_id,
             flywheel_run_id=flywheel_run_id,
             client_id=client_id,
-            from_weave=False,
         )
         TaskResult.model_validate(result)
 
@@ -233,11 +236,12 @@ def test_create_datasets_upload_validation_es(
 
     flywheel_run_id, mongo_db = create_flywheel_run
 
+    settings.weave_config.weave_dataset_enabled = False
+
     create_datasets(
         workload_id=current_workload_id,
         flywheel_run_id=flywheel_run_id,
         client_id=client_id,
-        from_weave=False,
     )
 
     # Verify the upload_data calls contain properly formatted data
@@ -265,6 +269,8 @@ def test_create_datasets_with_prefix_es(
     # Create default split configuration
     settings.data_split_config = DataSplitConfig(eval_size=1, val_ratio=0.5)
 
+    settings.weave_config.weave_dataset_enabled = False
+
     # Run the task with prefix
     prefix = "test-prefix"
     result = create_datasets(
@@ -272,7 +278,6 @@ def test_create_datasets_with_prefix_es(
         flywheel_run_id=flywheel_run_id,
         client_id=client_id,
         output_dataset_prefix=prefix,
-        from_weave=False,
     )
 
     # Convert result to TaskResult model
@@ -297,13 +302,14 @@ def test_create_datasets_no_records_error_es(
     # Get flywheel run ID from fixture
     flywheel_run_id, mongo_db = create_flywheel_run
 
+    settings.weave_config.weave_dataset_enabled = False
+
     # The function should raise ValueError for empty dataset
     with pytest.raises(ValueError) as exc_info:
         create_datasets(
             workload_id=non_existent_workload_id,
             flywheel_run_id=flywheel_run_id,
             client_id=client_id,
-            from_weave=False,
         )
 
     # Verify the error message
@@ -356,13 +362,13 @@ def test_create_datasets_not_enough_records_error_es(
             mock_settings.data_split_config.limit = 100
             mock_settings.data_split_config.eval_size = 1
             mock_settings.data_split_config.val_ratio = 0.2
+            mock_settings.weave_config.weave_dataset_enabled = False
 
             with pytest.raises(ValueError) as exc_info:
                 create_datasets(
                     workload_id=test_workload_id,
                     flywheel_run_id=flywheel_run_id,
                     client_id=client_id,
-                    from_weave=False,
                 )
 
             assert "Not enough records found" in str(exc_info.value)
@@ -493,6 +499,7 @@ def test_create_datasets_specific_malformed_records_es(
             mock_settings.data_split_config.eval_size = 2  # Fixed eval size
             mock_settings.data_split_config.val_ratio = 0.2  # 20% validation
             mock_settings.data_split_config.random_seed = 42  # Fixed random seed
+            mock_settings.weave_config.weave_dataset_enabled = False
 
             # Capture logging messages
             with patch("src.lib.flywheel.util.logger") as mock_logger:
@@ -501,7 +508,6 @@ def test_create_datasets_specific_malformed_records_es(
                     workload_id=test_workload_id,
                     flywheel_run_id=flywheel_run_id,
                     client_id=client_id,
-                    from_weave=False,
                 )
 
                 # Verify the expected error was logged

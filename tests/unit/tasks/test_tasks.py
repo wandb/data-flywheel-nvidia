@@ -258,7 +258,9 @@ def test_create_datasets_from_es(mock_es_client, mock_data_uploader, mock_db, mo
         }
     }
 
-    result = create_datasets(workload_id, flywheel_run_id, client_id, from_weave=False)
+    settings.weave_config.weave_dataset_enabled = False
+
+    result = create_datasets(workload_id, flywheel_run_id, client_id)
 
     # Instead of checking the type directly, verify the dictionary has the expected structure
     assert "status" in result
@@ -293,8 +295,9 @@ def test_create_datasets_empty_data_from_es(
     }
 
     # The function should raise an exception for empty dataset
+    settings.weave_config.weave_dataset_enabled = False
     with pytest.raises(Exception) as exc_info:
-        create_datasets(workload_id, flywheel_run_id, client_id, from_weave=False)
+        create_datasets(workload_id, flywheel_run_id, client_id)
 
     # Verify the error message
     assert "No records found" in str(exc_info.value)

@@ -86,7 +86,6 @@ def create_datasets(
     flywheel_run_id: str,
     client_id: str,
     output_dataset_prefix: str = "",
-    from_weave: bool = False,
     weave_op_names: Optional[List[str]] = None,
 ) -> TaskResult:
     """Pull data from Elasticsearch and create train/val/eval datasets.
@@ -100,11 +99,10 @@ def create_datasets(
         flywheel_run_id: ID of the FlywheelRun document
         client_id: ID of the client
         output_dataset_prefix: Optional prefix for dataset names
-        from_weave: Whether to pull data from Weave or Elasticsearch
         weave_op_names: Optional list of operation names to filter records
     """
     try:
-        if from_weave:
+        if settings.weave_config.weave_dataset_enabled:
             exporter = WeaveRecordExporter(op_names=weave_op_names)
             records = exporter.get_records(client_id, workload_id)
         else:
@@ -114,7 +112,7 @@ def create_datasets(
 
         workload_type = identify_workload_type(records)
 
-        if from_weave:
+        if settings.weave_config.weave_dataset_enabled:
             exporter.save_to_weave_dataset(records, client_id, workload_id)
 
         datasets = DatasetCreator(
