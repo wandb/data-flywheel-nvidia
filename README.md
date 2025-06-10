@@ -298,11 +298,11 @@ messages_tool = [
 log_chat(WORKLOADS["tool_router"], messages_tool)
 ```
 
-💡 **Streaming responses**: the OpenAI SDK delivers tokens incrementally in streaming mode. If you are using streaming mode in your clients, you will need to take that into account and either buffer the stream and reconstruct a full `response` object before logging, or modify the Flywheel importer to reconstruct the full response.
-
 <p align="center">
-<img src="./docs/images/weave-dataset.png" width="750">
+<img src="./docs/images/dataset-dash.png" width="750">
 </p>
+
+💡 **Streaming responses**: the OpenAI SDK delivers tokens incrementally in streaming mode. If you are using streaming mode in your clients, you will need to take that into account and either buffer the stream and reconstruct a full `response` object before logging, or modify the Flywheel importer to reconstruct the full response.
 
 #### 3&ensp;–&ensp;Import helpers and customization
 
