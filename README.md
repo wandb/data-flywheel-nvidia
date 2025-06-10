@@ -12,7 +12,7 @@
 <img src="./docs/images/wandb-dash.png" width="750">
 </p>
 
-Deploy this blueprint to create a **production-grade autonomous Data Flywheel service** that uses the NeMo Microservices platform to continuously discover and promote more efficient models.
+Deploy this blueprint to create a **production-grade autonomous Data Flywheel service** that uses the NeMo microservices to continuously discover and promote more efficient models.
 
 ## W&B Weave Integration for the Data Flywheel
 
@@ -36,7 +36,7 @@ Data Flywheels are a fledgling concept in GenerativeAI, but already real-world t
 
 **The purpose of this Blueprint is two-fold:**
 
-1. To provide a production-grade reference implementation of a Data Flywheel on top of the NeMo Microservice Platform.
+1. To provide a production-grade reference implementation of a Data Flywheel on top of the NeMo microservices.
 1. To educate the community on what Data Flywheels are: what they can do, what they can't do, and what to expect when building them.
 
 You can get started quickly and achieve similar results using your own infrastructure by following the [Quickstart guide](./docs/02-quickstart.md).
@@ -44,7 +44,7 @@ You can get started quickly and achieve similar results using your own infrastru
 - [Data Flywheel Foundational Blueprint with Weights \& Biases Weave](#data-flywheel-foundational-blueprint-with-weights--biases-weave)
   - [W\&B Weave Integration for the Data Flywheel](#wb-weave-integration-for-the-data-flywheel)
   - [What is a Data Flywheel?](#what-is-a-data-flywheel)
-    - [Where the NeMo Microservice Platform Comes In](#where-the-nemo-microservice-platform-comes-in)
+    - [Where the NeMo microservices Comes In](#where-the-nemo-microservices-comes-in)
   - [How to Use This Blueprint](#how-to-use-this-blueprint)
     - [Preparing your data](#preparing-your-data)
       - [1 – Log schema](#1log-schema)
@@ -96,11 +96,11 @@ Anyone who has done this manually knows there are a lot of options to consider w
 - Which fine-tuning techniques do you try?
 - Which metrics do you use in evals?
 
-It's a lot to decide on. Enter: The NeMo Microservice Platform.
+It's a lot to decide on. Enter: The NeMo microservice.
 
-### Where the NeMo Microservice Platform Comes In
+### Where the NeMo microservices Comes In
 
-The NeMo Microservice platform allows for programmatic control of **datasets**, **fine-tuning**, **evaluation**, and **inference**. This means that rather than having ML engineers manage each experiment, you can automate the exploration of various configurations using sensible defaults, and then present the most promising candidates to a research engineer or machine learning engineer for further analysis.
+The NeMo microservices allows for programmatic control of **datasets**, **fine-tuning**, **evaluation**, and **inference**. This means that rather than having ML engineers manage each experiment, you can automate the exploration of various configurations using sensible defaults, and then present the most promising candidates to a research engineer or machine learning engineer for further analysis.
 
 ```mermaid
 flowchart TD
@@ -119,7 +119,7 @@ end
 evaluator --> results["Weights & Biases Models"]
 ```
 
-In just a few hours, this automated process built on top of NMP can:
+In just a few hours, this automated process built on top of NeMo microservices can:
 
 1. Pull data from your Weights & Biases Weave logs.
 1. Group it by task (for example, if you have an agent doing multiple things, each node is a different task).
@@ -130,7 +130,7 @@ In just a few hours, this automated process built on top of NMP can:
 
 With reasonable defaults, the system automatically narrows a vast number of possible options down to a manageable set of promising candidates for further analysis—-no manual experiment design required.
 
-**👆 This is the key insight of the Data Flywheel Blueprint built on top of the NMP**.
+**👆 This is the key insight of the Data Flywheel Blueprint built on top of the NeMo microservices**.
 
 You can scale this process across any number of NIMs by using NeMo Deployment Manager to dynamically start and stop NIMs as needed, so you don't have to keep every NIM running at all times. This cycle can be repeated as frequently as desired: daily, weekly, or on your own schedule.
 
@@ -147,8 +147,8 @@ Nonetheless, we've shown it can work. And more importantly, we believe this idea
 Therefore, to effectively use this blueprint:
 
 1. **Learn from the reference implementation**
-   - **Play with the Launchable**: Walk through setting up NMP, deploying the reference services, and exercising the flywheel with the provided sample dataset.
-   - **Read the code & docs**: Finish this README and skim the source to understand how the API layer, background tasks, and NMP integrations fit together.
+   - **Play with the Launchable**: Walk through setting up NeMo microservices, deploying the reference services, and exercising the flywheel with the provided sample dataset.
+   - **Read the code & docs**: Finish this README and skim the source to understand how the API layer, background tasks, and NeMo microservices integrations fit together.
 
 2. **Prepare your traffic**
    - **Instrument production applications**: Every distinct LLM call (agent node, route, tool, etc.) must emit a stable `workload_id`. Optionally include a free-form description string—ignored by inference but useful for future workload classification.
@@ -363,7 +363,7 @@ You can also learn more about Flywheels here:
 The Data Flywheel Foundational Blueprint empowers organizations to accelerate the optimization of AI models for cost and performance. Rather than offering a one-size-fits-all solution, this blueprint provides a practical framework and proven tools to guide your journey toward more efficient, production-ready models.
 
 1. **Reference Implementation for Real-World Impact**
-   This blueprint demonstrates the capabilities of NeMo Microservices, providing a foundation you can adapt and extend to meet your specific production requirements.
+   This blueprint demonstrates the capabilities of NeMo microservices, providing a foundation you can adapt and extend to meet your specific production requirements.
 
 2. **Streamlined Human Oversight**
    The Flywheel process is designed to minimize manual intervention. Human review is reserved for evaluating candidate models after automated assessments, eliminating the need for ongoing user feedback or manual labeling.
@@ -378,14 +378,14 @@ The Data Flywheel Foundational Blueprint empowers organizations to accelerate th
    - Designed for teams with existing generative AI applications in production.
    - Easily integrates with your current logging and workload tagging practices.
    - Supports enhanced workload descriptions for improved future classification.
-   - Leverages robust infrastructure—including Weights & Biases Weave for production monitoring, Weights & Biases Models for experiment tracking, MongoDB, Redis, and NMP—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
+   - Leverages robust infrastructure—including Weights & Biases Weave for production monitoring, Weights & Biases Models for experiment tracking, MongoDB, Redis, and NeMo microservices—to store data, build datasets, run evaluations, fine-tune models, and re-evaluate results.
 
 To get the most value from the Data Flywheel Foundational Blueprint, ensure you have:
 
 - An existing generative AI application in production.
 - Logging of prompt/completion traffic, with workload tagging (such as routes, nodes, or agent steps).
 - (Optional, but recommended) Descriptive metadata for each workload to support future classification.
-- The ability to deploy and operate supporting infrastructure (Weights & Biases Weave, MongoDB, Redis, and NMP) for data storage, dataset creation, evaluation, and fine-tuning.
+- The ability to deploy and operate supporting infrastructure (Weights & Biases Weave, MongoDB, Redis, and NeMo microservices) for data storage, dataset creation, evaluation, and fine-tuning.
 
 By following this blueprint, you can confidently advance your AI model optimization initiatives, leveraging a process that is transparent, adaptable, and focused on measurable outcomes.
 
@@ -400,7 +400,7 @@ The blueprint purposely keeps the first release simple. Areas we are actively ex
 | **Dynamic Configuration Overrides** | Runtime overrides for config.yaml settings via API or environment variables |
 | **Data Governance & Privacy** | PII redaction pipeline support for logs and datasets; fine-grained RBAC on dataset access and usage |
 | **Data Governance & Privacy** | Enable experiment tracking tooling for granular tracking of fine-tune runs, metrics, artifacts, and config diffs |
-| **Hyper-parameter Sweeps** | Support launching NMP hyper-parameter sweeps from external tools (e.g. Flywheel) and pulling results back for analysis and visualization | |
+| **Hyper-parameter Sweeps** | Support launching NeMo microservices hyper-parameter sweeps from external tools (e.g. Flywheel) and pulling results back for analysis and visualization | |
 | **Smarter Dataset Construction** | Heuristics or LLM-based parsing to derive eval vs. fine-tune splits from logs; support for DPO/KTO pipelines or filtering by thumbs-up/down signal |
 | **Model & Backend Extensibility** | Add support for additional NIMs such as Qwen, LLaMA-Nemotron, and Mistral; include testing and evaluation support for quantized models |
 
@@ -423,7 +423,7 @@ The blueprint consists of the following implemented components:
 - **NeMo Microservices Integration**:
   - Datastore client for dataset management
   - Model evaluation and customization interfaces
-  - Configurable NMP endpoints
+  - Configurable NeMo microservices endpoints
 - **Experiment Tracking**:
   - Weights & Biases integration for tracking experiments and visualizing evaluation results (`src/lib/integration/wandb_callback.py`)
   - Model registry for versioning and tracking (`src/lib/nemo/model_manager.py`)
@@ -554,7 +554,7 @@ Refer to the [Configuration Guide](./docs/03-configuration.md) for more informat
      uv run pytest
      ```
 
-   - For integration tests (with mocked NMP components):
+   - For integration tests (with mocked NeMo microservices components):
 
      ```sh
      uv run pytest -m integration

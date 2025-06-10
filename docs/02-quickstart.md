@@ -23,7 +23,7 @@ This quickstart provides an initial [AIVA dataset](../data/aiva-final.jsonl) to 
 
 You must [generate a personal API key](https://org.ngc.nvidia.com/setup/api-keys) with the `NGC catalog` and `Public API Endpoints` services selected. This enables you to:
 
-- Complete deployment of NMP (NeMo Microservices Platform)
+- Complete deployment of NeMo microservices
 - Access NIM services
 - Access models hosted in the NVIDIA API Catalog
 - Download models on-premises
@@ -58,7 +58,7 @@ Authenticate with NGC using `nvcf login`. For detailed instructions, see the [NG
 
 ### 2. Deploy NMP
 
-To deploy NMP, follow the [NeMo Microservices Platform Prerequisites](https://docs.nvidia.com/nemo/microservices/latest/get-started/platform-prereq.html#beginner-tutorial-prerequisites) beginner tutorial. These instructions launch NMP using a local Minikube cluster. You have two options:
+To deploy NeMo microservices, follow the [NeMo microservices Prerequisites](https://docs.nvidia.com/nemo/microservices/latest/get-started/platform-prereq.html#beginner-tutorial-prerequisites) beginner tutorial. These instructions launch NeMo microservices using a local Minikube cluster. You have two options:
 
 - [Installing using deployment scripts](https://docs.nvidia.com/nemo/microservices/latest/get-started/platform-prereq.html#nemo-ms-get-started-prerequisites-using-deployment-scripts)
 - [Installing manually](https://docs.nvidia.com/nemo/microservices/latest/get-started/platform-prereq.html#installing-manually)
@@ -321,9 +321,9 @@ Then, you can clean up using the [clear volumes script](../scripts/clear_all_vol
 
 This script will clear all service volumes (Elasticsearch, Redis, and MongoDB).
 
-### 2. NMP Cleanup
+### 2. NeMo microservices Cleanup
 
-You can remove NMP when you are done using the platform by following the official [Uninstall NeMo Microservices Helm Chart](https://docs.nvidia.com/nemo/microservices/latest/set-up/deploy-as-platform/uninstall-platform-helm-chart.html) guide.
+You can remove NeMo microservices when you are done using the platform by following the official [Uninstall NeMo Microservices Helm Chart](https://docs.nvidia.com/nemo/microservices/latest/set-up/deploy-as-platform/uninstall-platform-helm-chart.html) guide.
 
 ## Troubleshooting
 

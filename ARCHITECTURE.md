@@ -12,7 +12,7 @@ The Data Flywheel Blueprint is a comprehensive system designed to automate and o
 skinparam componentStyle rectangle
 skinparam linetype ortho
 
-package "NeMo Microservices Platform (NMP)" {
+package "NeMo microservices (NMP)" {
     [Deployment Manager] as DM
     [Evaluator] as EVAL
     [Customizer] as CUST
@@ -92,7 +92,7 @@ box "Flywheel Service" #LightBlue
     participant "MongoDB" as MDB
 end box
 
-box "NeMo Microservices Platform" #LightGreen
+box "NeMo microservices" #LightGreen
     participant "Deployment Manager" as DM
     participant "Datastore" as DS
     participant "NIM Instance" as NIM
@@ -147,20 +147,20 @@ CELERY -> ADMIN: Notify job completion
 ## Implementation Details
 
 ### Deployment
-- NMP is deployed via Helm chart to an existing Kubernetes cluster
-- AIVA and Flywheel Service are deployed separately from NMP
+- NeMo microservices is deployed via Helm chart to an existing Kubernetes cluster
+- AI Virtual Assistant and Flywheel Service are deployed separately from NeMo microservices
 - Elasticsearch and MongoDB are managed services
 
 ### Development Focus
 The Flywheel Service represents the primary development effort for this blueprint:
-- All other components (NMP, AIVA, Elasticsearch, MongoDB) are existing services
+- All other components (NeMo microservices, AI Virtual Assistant, Elasticsearch, MongoDB) are existing services
 - The Flywheel Service must be built from scratch
 - Key components to implement:
   - FastAPI REST interface
   - Celery task management
   - Redis queue integration
   - MongoDB state management
-  - NMP service integration
+  - NeMo microservices integration
 
 ### Job Configuration
 When scheduling a job, the following parameters are required:
@@ -313,9 +313,9 @@ The proxy service would:
 
 ## Core Components
 
-### 1. NeMo Microservices Platform (NMP)
+### 1. NeMo microservices
 
-- Overview of NMP's role in the system
+- Overview of NeMo microservices's role in the system
 - Key microservices:
   - Deployment Manager: Manages NIM instances
   - Evaluator: Runs evaluations against NIMs
@@ -368,7 +368,7 @@ The proxy service would:
 - Redis for queue management
 - MongoDB for state persistence
 - Elasticsearch for logging
-- NMP microservices integration
+- NeMo microservices integration
 
 ## Security Considerations
 - API authentication and authorization

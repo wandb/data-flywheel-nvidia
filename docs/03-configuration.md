@@ -5,7 +5,7 @@ Learn how to configure the Data Flywheel Foundational Blueprint using this guide
 - [Configuration Guide](#configuration-guide)
   - [Before You Start](#before-you-start)
   - [Configuration File Location](#configuration-file-location)
-  - [NMP Configuration](#nmp-configuration)
+  - [NeMo microservices Configuration](#nemo-microservices-configuration)
   - [Logging Configuration](#logging-configuration)
   - [Environment Variables](#environment-variables)
   - [Model Integration](#model-integration)
@@ -32,11 +32,11 @@ Learn how to configure the Data Flywheel Foundational Blueprint using this guide
 
 > **Important**
 >
-> Advanced configuration such as Large-scale hyper-parameter sweeps, architecture search, or custom evaluation metrics must run directly in **NeMo Microservices Platform (NMP)**. The configurations in this guide are only for the blueprint itself.
+> Advanced configuration such as Large-scale hyper-parameter sweeps, architecture search, or custom evaluation metrics must run directly in **NeMo microservices**. The configurations in this guide are only for the blueprint itself.
 
 > **Note**
 > 
-> For detailed NMP API documentation, refer to the [official documentation](https://docs.nvidia.com/nemo/microservices/latest/api/index.html).
+> For detailed NeMo microservices API documentation, refer to the [official documentation](https://docs.nvidia.com/nemo/microservices/latest/api/index.html).
 
 ## Configuration File Location
 
@@ -46,9 +46,9 @@ The Data Flywheel Foundational Blueprint uses a YAML-based configuration system.
 config/config.yaml
 ```
 
-## NMP Configuration
+## NeMo microservices Configuration
 
-The `nmp_config` section controls the NeMo Microservices Platform (NMP) integration:
+The `nmp_config` section controls the NeMo microservices (NMP) integration:
 
 ```yaml
 nmp_config:
